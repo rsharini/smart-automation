@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_DEVICES 10
+
+typedef enum {
+    LIGHT,
+    DOOR
+} DeviceType;
+
+typedef enum {
+    OFF,
+    ON
+} DeviceState;
+
+typedef struct {
+    int id;
+    DeviceType type;
+    DeviceState state;
+    time_t scheduleTime; // Time to schedule tasks (for simplicity, using epoch time)
+} Device;
+
+Device devices[MAX_DEVICES];
+int deviceCount = 0;
+
+void addDevice(DeviceType type) {
+    if (deviceCount >= MAX_DEVICES) {
+        printf("Device limit reached.\n");
+        return;
+    }
+    devices[deviceCount].id = deviceCount;
+    devices[deviceCount].type = type;
+    devices[deviceCount].state = OFF;
+    devices[deviceCount].scheduleTime = 0; // No schedule by default
+    deviceCount++;
+}
+
+void turnOn(int id) {
+    if (id >= 0 && id < deviceCount) {
+        devices[id].state = ON;
+        printf("Device %d is now ON.\n", id);
+    } else {
+        printf("Invalid device ID.\n");
+    }
+}
+
+void turnOff(int id) {
+    if (id >= 0 && id < deviceCount) {
+        devices[id].state = OFF;
+        printf("Device %d is now OFF.\n", id);
+    } else {
+        printf("Invalid device ID.\n");
+    }
+}
+
+void setSchedule(int id, time_t scheduleTime) {
+    if (id >= 0 && id < deviceCount) {
+        devices[id].scheduleTime = scheduleTime;
+        printf("Schedule set for device %d.\n", id);
+    } else {
+        printf("Invalid device ID.\n");
+    }
+}
+
+void checkSchedules() {
+    time_t now = time(NULL);
+    for (int i = 0; i < deviceCount; i++) {
+        if (devices[i].scheduleTime != 0 && devices[i].scheduleTime <= now) {
+            devices[i].state = (devices[i].state == OFF) ? ON : OFF; // Toggle state
+            printf("Scheduled action executed for device %d. New state: %s\n", i, devices[i].state == ON ? "ON" : "OFF");
+            devices[i].scheduleTime = 0; // Clear schedule after execution
+        }
+    }
+}
+
+void printStatus() {
+    for (int i = 0; i < deviceCount; i++) {
+        const char *typeStr = devices[i].type == LIGHT ? "Light" : "Door";
+        const char *stateStr = devices[i].state == ON ? "ON" : "OFF";
+        const char *statusStr = (devices[i].type == DOOR && devices[i].state == ON) ? "Locked" : "Unlocked";
+        printf("Device %d (%s): %s%s\n", devices[i].id, typeStr, typeStr == "Door" ? statusStr : stateStr, typeStr == "Light" ? "" : "");
+    }
+}
+
+int main() {
+    addDevice(LIGHT);
+    addDevice(DOOR);
+   
+    // Example commands
+    turnOn(0); // Turn on light
+    turnOff(1); // Turn off door (should be unlocked)
+   
+    // Set schedule (e.g., toggle light every minute)
+    time_t futureTime = time(NULL) + 10; // Schedule for 10 seconds in the future
+    setSchedule(0, futureTime);
+   
+    // Simulate time passage
+    sleep(11); // Wait for 11 seconds to pass
+   
+    // Check and execute scheduled tasks
+    checkSchedules();
+   
+    // Print status of all devices
+    printStatus();
+   
+    return 0;
+}
